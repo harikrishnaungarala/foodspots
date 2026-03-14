@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FoodSpots India 🍛</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --c1:#FF6B35;--c2:#F7C948;--c3:#4ECDC4;--c4:#A78BFA;--c5:#F472B6;--c6:#34D399;
+  --dark:#1a0a2e;--dark2:#2d1b4e;--dark3:#3d2a5e;
+  --card-radius:20px;--btn-radius:50px;
+  --font:'Nunito',sans-serif;--display:'Baloo 2',cursive;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--dark);color:#fff;overflow-x:hidden}
+
+/* ── ANIMATED BG ── */
+body::before{
+  content:'';position:fixed;inset:0;z-index:-1;
+  background:linear-gradient(135deg,#1a0a2e 0%,#2d1b4e 40%,#1a2a4e 70%,#0d1f38 100%);
+}
+.blob{position:fixed;border-radius:50%;filter:blur(80px);opacity:.18;z-index:-1;animation:blobMove 12s ease-in-out infinite alternate}
+.blob1{width:600px;height:600px;background:#FF6B35;top:-100px;left:-150px;animation-delay:0s}
+.blob2{width:500px;height:500px;background:#A78BFA;top:30%;right:-100px;animation-delay:-4s}
+.blob3{width:400px;height:400px;background:#4ECDC4;bottom:-50px;left:30%;animation-delay:-8s}
+@keyframes blobMove{0%{transform:translate(0,0) scale(1)}100%{transform:translate(40px,30px) scale(1.1)}}
+
+/* ── NAVBAR ── */
+.navbar{background:rgba(26,10,46,.85)!important;backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.08);padding:12px 0}
+.navbar-brand{font-family:var(--display);font-size:1.7rem;font-weight:800;background:linear-gradient(90deg,var(--c1),var(--c2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.nav-pill{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:var(--btn-radius);padding:6px 16px;font-size:.8rem;font-weight:700;color:rgba(255,255,255,.7);cursor:pointer;transition:all .2s;text-decoration:none}
+.nav-pill:hover,.nav-pill.active{background:linear-gradient(135deg,var(--c1),var(--c2));border-color:transparent;color:#fff;transform:translateY(-1px);box-shadow:0 4px 16px rgba(255,107,53,.4)}
+
+/* ── HERO ── */
+.hero{padding:80px 0 60px;text-align:center;position:relative}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:50px;padding:6px 18px;font-size:.78rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--c2);margin-bottom:20px}
+.hero-title{font-family:var(--display);font-size:clamp(3rem,8vw,5.5rem);font-weight:800;line-height:1.05;margin-bottom:16px}
+.hero-title .g1{background:linear-gradient(90deg,#fff,rgba(255,255,255,.7));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-title .g2{background:linear-gradient(90deg,var(--c1),var(--c2),var(--c5));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:1.1rem;color:rgba(255,255,255,.5);margin-bottom:40px;font-weight:400}
+.floating-emojis{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.fe{position:absolute;font-size:2rem;opacity:.15;animation:floatUp 8s ease-in-out infinite}
+@keyframes floatUp{0%{transform:translateY(0) rotate(0deg);opacity:.15}50%{opacity:.3}100%{transform:translateY(-40px) rotate(10deg);opacity:.1}}
+
+/* ── SEARCH ── */
+.search-wrap{max-width:600px;margin:0 auto 16px;position:relative}
+.search-input{width:100%;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.12);border-radius:var(--btn-radius);padding:16px 56px 16px 52px;font-size:1rem;font-family:var(--font);color:#fff;outline:none;transition:all .25s;backdrop-filter:blur(10px)}
+.search-input::placeholder{color:rgba(255,255,255,.35)}
+.search-input:focus{border-color:var(--c1);background:rgba(255,107,53,.08);box-shadow:0 0 0 4px rgba(255,107,53,.15)}
+.search-icon-wrap{position:absolute;left:18px;top:50%;transform:translateY(-50%);font-size:1.1rem;opacity:.5}
+.search-clear{position:absolute;right:16px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;color:#fff;font-size:.8rem;display:none;align-items:center;justify-content:center;transition:background .15s}
+.search-clear:hover{background:rgba(255,255,255,.25)}
+
+/* ── STATS ── */
+.stats-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:40px}
+.stat-pill{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:50px;padding:8px 20px;display:flex;align-items:center;gap:8px}
+.stat-pill .num{font-weight:800;font-size:1.1rem;font-family:var(--display)}
+.stat-pill .lbl{font-size:.75rem;color:rgba(255,255,255,.5);font-weight:600}
+
+/* ── CITY TABS ── */
+.city-section{padding:0 0 24px}
+.city-scroller{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:none}
+.city-scroller::-webkit-scrollbar{display:none}
+.city-btn{flex-shrink:0;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:var(--btn-radius);padding:10px 22px;font-family:var(--font);font-weight:700;font-size:.85rem;color:rgba(255,255,255,.6);cursor:pointer;transition:all .2s;white-space:nowrap}
+.city-btn:hover{background:rgba(255,255,255,.12);color:#fff;transform:translateY(-2px)}
+.city-btn.active{border-color:transparent;color:#1a0a2e;font-weight:800;transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+
+/* ── TOOLBAR ── */
+.toolbar{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px 20px;margin-bottom:24px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.view-group{display:flex;gap:4px;background:rgba(0,0,0,.2);border-radius:10px;padding:4px}
+.view-btn{background:none;border:none;border-radius:8px;padding:8px 14px;font-family:var(--font);font-weight:700;font-size:.8rem;color:rgba(255,255,255,.4);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
+.view-btn.active{background:rgba(255,255,255,.12);color:#fff}
+.cat-chips{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.cat-chip{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:50px;padding:6px 14px;font-size:.78rem;font-weight:700;color:rgba(255,255,255,.5);cursor:pointer;transition:all .2s;white-space:nowrap}
+.cat-chip:hover{background:rgba(255,255,255,.12);color:#fff}
+.cat-chip.active{border-color:transparent;color:#1a0a2e}
+.sort-sel{background:rgba(0,0,0,.3);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;padding:8px 14px;font-family:var(--font);font-weight:700;font-size:.82rem;color:#fff;cursor:pointer;outline:none}
+
+/* ── PLATFORM CHIPS ── */
+.plat-row{display:flex;gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+.plat-chip{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:50px;padding:7px 18px;font-size:.8rem;font-weight:700;color:rgba(255,255,255,.5);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:7px}
+.plat-chip:hover{background:rgba(255,255,255,.1);color:#fff}
+.plat-chip.active{color:#fff}
+.plat-chip.active.p-all{background:linear-gradient(135deg,#FF6B35,#A78BFA);border-color:transparent;box-shadow:0 4px 16px rgba(167,139,250,.3)}
+.plat-chip.active.p-sw{background:#FF6900;border-color:transparent;box-shadow:0 4px 16px rgba(255,105,0,.4)}
+.plat-chip.active.p-zo{background:#E23744;border-color:transparent;box-shadow:0 4px 16px rgba(226,55,68,.4)}
+.plat-dot{width:9px;height:9px;border-radius:50%}
+.result-count{margin-left:auto;font-size:.82rem;color:rgba(255,255,255,.35);font-weight:600}
+
+/* ── CARDS ── */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+.food-card{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.09);border-radius:var(--card-radius);overflow:hidden;cursor:pointer;transition:all .3s;position:relative;backdrop-filter:blur(10px)}
+.food-card::before{content:'';position:absolute;inset:0;border-radius:var(--card-radius);opacity:0;transition:opacity .3s;z-index:0}
+.food-card:hover{transform:translateY(-6px) scale(1.01);border-color:rgba(255,255,255,.2)}
+.food-card:hover::before{opacity:1}
+.card-accent-bar{height:5px;width:100%;position:relative;z-index:1}
+.card-inner{padding:18px;position:relative;z-index:1}
+.card-top-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.rank-badge{font-size:.72rem;font-weight:800;padding:4px 12px;border-radius:50px;letter-spacing:.5px}
+.rank-1{background:linear-gradient(135deg,#FFD700,#FFA500);color:#1a0a2e}
+.rank-2{background:linear-gradient(135deg,#C0C0C0,#A0A0A0);color:#1a0a2e}
+.rank-3{background:linear-gradient(135deg,#CD7F32,#A0522D);color:#fff}
+.rank-other{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6)}
+.plat-tag{font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:50px}
+.ptag-sw{background:rgba(255,105,0,.2);color:#FF8C42;border:1px solid rgba(255,105,0,.3)}
+.ptag-zo{background:rgba(226,55,68,.2);color:#F87171;border:1px solid rgba(226,55,68,.3)}
+.ptag-both{background:rgba(255,255,255,.08);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.12)}
+.card-emoji-wrap{text-align:center;padding:12px 0 4px;font-size:52px;line-height:1;transition:transform .3s}
+.food-card:hover .card-emoji-wrap{transform:scale(1.12) rotate(-4deg)}
+.card-name{font-family:var(--display);font-size:1.15rem;font-weight:700;margin-bottom:4px;color:#fff}
+.card-area{font-size:.78rem;color:rgba(255,255,255,.4);margin-bottom:14px;display:flex;align-items:center;gap:4px}
+.card-metrics-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.metric-box{background:rgba(0,0,0,.2);border-radius:12px;padding:9px 8px;text-align:center}
+.metric-val{font-weight:800;font-size:.95rem;font-family:var(--display)}
+.metric-lbl{font-size:.65rem;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.6px;margin-top:1px}
+.card-tags-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px}
+.ctag{font-size:.72rem;background:rgba(255,255,255,.08);color:rgba(255,255,255,.55);border-radius:6px;padding:3px 8px;font-weight:600}
+.card-btns{display:flex;gap:6px}
+.cbtn{flex:1;padding:9px 6px;border-radius:10px;border:none;font-family:var(--font);font-weight:700;font-size:.78rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px;text-decoration:none}
+.cbtn-sw{background:rgba(255,105,0,.15);color:#FF8C42;border:1px solid rgba(255,105,0,.25)}
+.cbtn-sw:hover{background:#FF6900;color:#fff;box-shadow:0 4px 16px rgba(255,105,0,.4)}
+.cbtn-zo{background:rgba(226,55,68,.15);color:#F87171;border:1px solid rgba(226,55,68,.25)}
+.cbtn-zo:hover{background:#E23744;color:#fff;box-shadow:0 4px 16px rgba(226,55,68,.4)}
+.cbtn-review{background:rgba(167,139,250,.15);color:#A78BFA;border:1px solid rgba(167,139,250,.25)}
+.cbtn-review:hover{background:#A78BFA;color:#fff;box-shadow:0 4px 16px rgba(167,139,250,.4)}
+
+/* ── CARD ENTER ANIMATION ── */
+@keyframes cardIn{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:none}}
+.food-card{animation:cardIn .45s ease both}
+
+/* ── MAP ── */
+.map-container{border-radius:var(--card-radius);overflow:hidden;border:2px solid rgba(255,255,255,.1);position:relative}
+#leafletMap{height:540px;width:100%}
+.map-overlay-card{position:absolute;top:16px;right:16px;width:290px;background:rgba(26,10,46,.92);backdrop-filter:blur(16px);border:1.5px solid rgba(255,255,255,.12);border-radius:16px;padding:18px;z-index:1000;animation:cardIn .25s ease}
+.map-hint{font-size:.82rem;color:rgba(255,255,255,.35);text-align:center;padding:20px 0;font-weight:600}
+
+/* ── LIST TABLE ── */
+.list-table-wrap{background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);border-radius:var(--card-radius);overflow:hidden}
+.list-table{width:100%;border-collapse:collapse}
+.list-table thead th{background:rgba(0,0,0,.3);padding:13px 16px;font-size:.72rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.4);font-weight:800;border-bottom:1px solid rgba(255,255,255,.08)}
+.list-table tbody tr{border-bottom:1px solid rgba(255,255,255,.05);transition:background .15s}
+.list-table tbody tr:hover{background:rgba(255,255,255,.04)}
+.list-table td{padding:13px 16px;font-size:.85rem;vertical-align:middle}
+.list-table tbody tr:last-child{border-bottom:none}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(8px)}
+.modal-overlay.open{display:flex}
+.modal-box{background:linear-gradient(145deg,#2d1b4e,#1a2a4e);border:1.5px solid rgba(255,255,255,.12);border-radius:24px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;position:relative;animation:modalIn .25s ease;box-shadow:0 32px 80px rgba(0,0,0,.6)}
+@keyframes modalIn{from{opacity:0;transform:scale(.93) translateY(16px)}to{opacity:1;transform:none}}
+.modal-close{position:absolute;top:14px;right:14px;background:rgba(255,255,255,.1);border:none;border-radius:50%;width:34px;height:34px;cursor:pointer;color:rgba(255,255,255,.7);font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .15s;z-index:1}
+.modal-close:hover{background:rgba(255,255,255,.2);color:#fff}
+.modal-header-grad{height:8px;border-radius:22px 22px 0 0}
+.modal-body-inner{padding:24px}
+.modal-emoji-big{font-size:64px;text-align:center;margin-bottom:10px;animation:bounceIn .4s ease}
+@keyframes bounceIn{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+.modal-title{font-family:var(--display);font-size:1.6rem;font-weight:800;text-align:center;margin-bottom:4px}
+.modal-sub{text-align:center;font-size:.82rem;color:rgba(255,255,255,.4);margin-bottom:20px}
+.modal-metrics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.mm-box{background:rgba(0,0,0,.25);border-radius:14px;padding:12px;text-align:center;border:1px solid rgba(255,255,255,.07)}
+.mm-val{font-family:var(--display);font-size:1.15rem;font-weight:800;margin-bottom:2px}
+.mm-lbl{font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.35)}
+.modal-order-btns{display:flex;gap:8px;margin-bottom:24px}
+.mobtn{flex:1;padding:13px;border-radius:12px;border:none;font-family:var(--font);font-weight:800;font-size:.9rem;cursor:pointer;text-decoration:none;text-align:center;transition:all .2s;display:block}
+.mobtn-sw{background:linear-gradient(135deg,#FF6900,#FF8C42);color:#fff}
+.mobtn-sw:hover{box-shadow:0 8px 24px rgba(255,105,0,.5);transform:translateY(-2px)}
+.mobtn-zo{background:linear-gradient(135deg,#E23744,#F87171);color:#fff}
+.mobtn-zo:hover{box-shadow:0 8px 24px rgba(226,55,68,.5);transform:translateY(-2px)}
+.reviews-title{font-weight:800;font-size:.95rem;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.review-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;margin-bottom:10px}
+.rv-header{display:flex;justify-content:space-between;margin-bottom:6px}
+.rv-user{font-weight:700;font-size:.85rem}
+.rv-time{font-size:.75rem;color:rgba(255,255,255,.3)}
+.rv-stars{color:#F7C948;font-size:.85rem;margin-bottom:6px}
+.rv-text{font-size:.82rem;color:rgba(255,255,255,.6);line-height:1.6}
+.write-review-box{background:rgba(0,0,0,.2);border-radius:14px;padding:16px;margin-top:16px;border:1px solid rgba(255,255,255,.07)}
+.wr-title{font-weight:800;font-size:.88rem;margin-bottom:12px}
+.star-row{display:flex;gap:4px;margin-bottom:10px}
+.star-interactive{font-size:1.6rem;cursor:pointer;color:rgba(255,255,255,.2);transition:all .15s;background:none;border:none;line-height:1}
+.star-interactive.lit{color:#F7C948;transform:scale(1.1)}
+.review-ta{width:100%;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 14px;font-family:var(--font);font-size:.85rem;color:#fff;resize:vertical;min-height:70px;outline:none;transition:border-color .2s}
+.review-ta:focus{border-color:var(--c4)}
+.review-ta::placeholder{color:rgba(255,255,255,.25)}
+.post-btn{background:linear-gradient(135deg,var(--c4),var(--c5));color:#fff;border:none;border-radius:10px;padding:10px 22px;font-family:var(--font);font-weight:800;font-size:.85rem;cursor:pointer;margin-top:8px;transition:all .2s}
+.post-btn:hover{box-shadow:0 6px 20px rgba(167,139,250,.4);transform:translateY(-1px)}
+.success-msg{display:none;background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.3);border-radius:8px;padding:10px 14px;font-size:.82rem;color:#34D399;margin-top:8px}
+
+/* ── EMPTY ── */
+.empty-state{text-align:center;padding:80px 20px;color:rgba(255,255,255,.25)}
+.empty-state .big{font-size:64px;margin-bottom:12px}
+
+/* ── FOOTER ── */
+.footer{background:rgba(0,0,0,.3);border-top:1px solid rgba(255,255,255,.07);padding:24px 0;text-align:center;font-size:.8rem;color:rgba(255,255,255,.25);font-weight:600}
+.footer span{color:var(--c1)}
+
+/* ── PULSE BADGE ── */
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,107,53,.5)}50%{box-shadow:0 0 0 8px rgba(255,107,53,0)}}
+.rank-1{animation:pulse 2s infinite}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .hero-title{font-size:2.5rem}
+  .map-overlay-card{display:none}
+  .cards-grid{grid-template-columns:1fr}
+  .modal-metrics-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ANIMATED BG BLOBS -->
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+<div class="blob blob3"></div>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg sticky-top">
+  <div class="container">
+    <a class="navbar-brand" href="#">🍛 FoodSpots India</a>
+    <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
+      <span class="nav-pill" id="themeToggle">🌙 Dark</span>
+      <a class="nav-pill" href="#" onclick="scrollToTop()">⬆ Top</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="floating-emojis" id="floatingEmojis"></div>
+  <div class="container">
+    <div class="hero-eyebrow">🔥 Based on Swiggy &amp; Zomato order volume</div>
+    <h1 class="hero-title">
+      <span class="g1">Discover the</span><br/>
+      <span class="g2">Best Food Spots</span>
+    </h1>
+    <p class="hero-sub">Most-ordered restaurants across 8 Indian cities 🗺️</p>
+
+    <!-- SEARCH -->
+    <div class="search-wrap">
+      <span class="search-icon-wrap">🔍</span>
+      <input class="search-input" id="searchInput" type="text" placeholder="Search restaurants, dishes, areas…" autocomplete="off"/>
+      <button class="search-clear" id="searchClear">✕</button>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-row" id="statsRow"></div>
+  </div>
+</section>
+
+<!-- CITY TABS -->
+<section class="container mb-2">
+  <div class="city-scroller" id="cityScroller"></div>
+</section>
+
+<!-- TOOLBAR -->
+<section class="container">
+  <div class="toolbar">
+    <!-- View -->
+    <div class="view-group">
+      <button class="view-btn active" data-view="grid">⊞ Grid</button>
+      <button class="view-btn" data-view="map">📍 Map</button>
+      <button class="view-btn" data-view="list">☰ List</button>
+    </div>
+    <!-- Cat filters -->
+    <div class="cat-chips" id="catChips"></div>
+    <!-- Sort -->
+    <select class="sort-sel" id="sortSel">
+      <option value="orders">🔥 Most Ordered</option>
+      <option value="rating">⭐ Top Rated</option>
+      <option value="delivery">⚡ Fastest</option>
+      <option value="az">🔤 A → Z</option>
+    </select>
+  </div>
+
+  <!-- PLATFORM + COUNT -->
+  <div class="plat-row">
+    <button class="plat-chip p-all active" data-plat="all">✨ All Platforms</button>
+    <button class="plat-chip p-sw" data-plat="swiggy"><span class="plat-dot" style="background:#FF6900"></span>Swiggy</button>
+    <button class="plat-chip p-zo" data-plat="zomato"><span class="plat-dot" style="background:#E23744"></span>Zomato</button>
+    <span class="result-count" id="resultCount"></span>
+  </div>
+</section>
+
+<!-- MAIN CONTENT -->
+<main class="container pb-5">
+
+  <!-- GRID -->
+  <div id="viewGrid" class="view-panel">
+    <div class="cards-grid" id="cardsGrid"></div>
+  </div>
+
+  <!-- MAP -->
+  <div id="viewMap" class="view-panel d-none">
+    <div class="map-container">
+      <div id="leafletMap"></div>
+      <div class="map-overlay-card" id="mapOverlayCard">
+        <p class="map-hint">📍 Click a marker to see details</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIST -->
+  <div id="viewList" class="view-panel d-none">
+    <div class="list-table-wrap">
+      <table class="list-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Restaurant</th><th>Area</th><th>Category</th>
+            <th>Orders</th><th>Rating</th><th>Delivery</th><th>Order</th>
+          </tr>
+        </thead>
+        <tbody id="listBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box" id="modalBox">
+    <button class="modal-close" id="modalClose">✕</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  Made with <span>❤️</span> · FoodSpots India · 8 cities · 38 restaurants · Data from Swiggy &amp; Zomato
+</footer>
+
+<!-- DATA -->
+<script>
+const CITIES=[
+  {id:"hyderabad",name:"Hyderabad",emoji:"🕌",lat:17.385,lng:78.4867,state:"Telangana",color:"#FF6B35"},
+  {id:"mumbai",name:"Mumbai",emoji:"🌊",lat:19.076,lng:72.8777,state:"Maharashtra",color:"#F7C948"},
+  {id:"bangalore",name:"Bangalore",emoji:"🌸",lat:12.9716,lng:77.5946,state:"Karnataka",color:"#4ECDC4"},
+  {id:"delhi",name:"Delhi",emoji:"🏛️",lat:28.6139,lng:77.209,state:"Delhi",color:"#A78BFA"},
+  {id:"chennai",name:"Chennai",emoji:"🌴",lat:13.0827,lng:80.2707,state:"Tamil Nadu",color:"#F472B6"},
+  {id:"kolkata",name:"Kolkata",emoji:"🎭",lat:22.5726,lng:88.3639,state:"West Bengal",color:"#34D399"},
+  {id:"pune",name:"Pune",emoji:"🏰",lat:18.5204,lng:73.8567,state:"Maharashtra",color:"#FB923C"},
+  {id:"jaipur",name:"Jaipur",emoji:"🐪",lat:26.9124,lng:75.7873,state:"Rajasthan",color:"#E879F9"},
+];
+
+const RESTAURANTS=[
+  {id:1,city:"hyderabad",name:"Shah Ghouse Cafe",area:"Tolichowki",lat:17.3927,lng:78.4302,cat:"Biryani",rating:4.6,orders:52000,delivery:30,tags:["Dum Biryani","Haleem","Irani Chai"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🍛",price:"₹₹"},
+  {id:2,city:"hyderabad",name:"Paradise Biryani",area:"Secunderabad",lat:17.4399,lng:78.4983,cat:"Biryani",rating:4.5,orders:48000,delivery:35,tags:["Chicken Biryani","Mutton Biryani","Kebabs"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🫕",price:"₹₹"},
+  {id:3,city:"hyderabad",name:"Chutneys",area:"Banjara Hills",lat:17.4156,lng:78.4347,cat:"Breakfast",rating:4.4,orders:41000,delivery:25,tags:["Dosa","Idli","Filter Coffee"],platform:"zomato",swiggy:null,zomato:"https://www.zomato.com/",img:"🥘",price:"₹"},
+  {id:4,city:"hyderabad",name:"Gokul Chat",area:"Koti",lat:17.3838,lng:78.4827,cat:"Street Food",rating:4.5,orders:38000,delivery:20,tags:["Pani Puri","Bhel","Papdi Chat"],platform:"swiggy",swiggy:"https://www.swiggy.com/",zomato:null,img:"🍡",price:"₹"},
+  {id:5,city:"hyderabad",name:"Karachi Bakery",area:"Mozamjahi Market",lat:17.3726,lng:78.4744,cat:"Desserts",rating:4.5,orders:35000,delivery:40,tags:["Fruit Biscuits","Osmania Biscuits","Cake"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🍰",price:"₹"},
+  {id:6,city:"hyderabad",name:"Hotel Shadab",area:"High Court",lat:17.3598,lng:78.4735,cat:"Biryani",rating:4.4,orders:33000,delivery:30,tags:["Haleem","Biryani","Nihari"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🍲",price:"₹₹"},
+  {id:7,city:"hyderabad",name:"Nimrah Cafe",area:"Charminar",lat:17.3616,lng:78.4747,cat:"Cafe",rating:4.6,orders:31000,delivery:25,tags:["Irani Chai","Osmania Biscuits"],platform:"swiggy",swiggy:"https://www.swiggy.com/",zomato:null,img:"☕",price:"₹"},
+  {id:8,city:"hyderabad",name:"Bawarchi Restaurant",area:"RTC Crossroads",lat:17.4051,lng:78.4843,cat:"Biryani",rating:4.3,orders:36000,delivery:35,tags:["Biryani","Chicken Curry","Naan"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🍗",price:"₹₹"},
+  {id:9,city:"mumbai",name:"Bade Miyan",area:"Colaba",lat:18.922,lng:72.8318,cat:"Street Food",rating:4.5,orders:61000,delivery:25,tags:["Seekh Kebab","Rolls","Biryani"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🌯",price:"₹"},
+  {id:10,city:"mumbai",name:"Britannia & Co",area:"Ballard Estate",lat:18.9347,lng:72.8413,cat:"Breakfast",rating:4.7,orders:44000,delivery:40,tags:["Berry Pulao","Dhansak","Sali Boti"],platform:"zomato",swiggy:null,zomato:"https://www.zomato.com/",img:"🍱",price:"₹₹"},
+  {id:11,city:"mumbai",name:"Swati Snacks",area:"Tardeo",lat:18.9719,lng:72.8082,cat:"Street Food",rating:4.6,orders:39000,delivery:30,tags:["Pani Puri","Ragda Patties","Kachori"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🥙",price:"₹"},
+  {id:12,city:"mumbai",name:"Cafe Madras",area:"Matunga",lat:19.0257,lng:72.8555,cat:"Breakfast",rating:4.5,orders:35000,delivery:35,tags:["Idli","Dosa","Filter Coffee"],platform:"swiggy",swiggy:"https://www.swiggy.com/",zomato:null,img:"🫓",price:"₹"},
+  {id:13,city:"mumbai",name:"Wada Pav @ Kirti",area:"Dadar",lat:19.0178,lng:72.8478,cat:"Street Food",rating:4.6,orders:57000,delivery:15,tags:["Wada Pav","Misal Pav","Chai"],platform:"swiggy",swiggy:"https://www.swiggy.com/",zomato:null,img:"🥪",price:"₹"},
+  {id:14,city:"mumbai",name:"Khyber Restaurant",area:"Fort",lat:18.9322,lng:72.8345,cat:"North Indian",rating:4.4,orders:32000,delivery:45,tags:["Kebabs","Biryani","Nihari"],platform:"zomato",swiggy:null,zomato:"https://www.zomato.com/",img:"🍖",price:"₹₹₹"},
+  {id:15,city:"bangalore",name:"MTR - Mavalli Tiffin",area:"Lalbagh",lat:12.9538,lng:77.5877,cat:"Breakfast",rating:4.7,orders:55000,delivery:35,tags:["Masala Dosa","Rava Idli","Filter Coffee"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🥞",price:"₹"},
+  {id:16,city:"bangalore",name:"Empire Restaurant",area:"Indiranagar",lat:12.9784,lng:77.6408,cat:"North Indian",rating:4.3,orders:49000,delivery:30,tags:["Chicken Tikka","Biryani","Tandoori"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🍗",price:"₹₹"},
+  {id:17,city:"bangalore",name:"Vidyarthi Bhavan",area:"Gandhi Bazaar",lat:12.9471,lng:77.571,cat:"Breakfast",rating:4.6,orders:43000,delivery:40,tags:["Benne Masala Dosa","Idli","Kesari Bath"],platform:"zomato",swiggy:null,zomato:"https://www.zomato.com/",img:"🫔",price:"₹"},
+  {id:18,city:"bangalore",name:"Meghana Foods",area:"Residency Road",lat:12.9713,lng:77.6049,cat:"Biryani",rating:4.5,orders:41000,delivery:25,tags:["Andhra Biryani","Chicken Curry"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🍛",price:"₹₹"},
+  {id:19,city:"bangalore",name:"Truffles",area:"Koramangala",lat:12.9352,lng:77.6245,cat:"Cafe",rating:4.4,orders:38000,delivery:30,tags:["Burgers","Steaks","Milkshakes"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🍔",price:"₹₹"},
+  {id:20,city:"delhi",name:"Karim's",area:"Jama Masjid",lat:28.6507,lng:77.2334,cat:"Biryani",rating:4.6,orders:63000,delivery:35,tags:["Mutton Biryani","Nihari","Seekh Kebab"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🍲",price:"₹₹"},
+  {id:21,city:"delhi",name:"Paranthe Wali Gali",area:"Chandni Chowk",lat:28.6565,lng:77.23,cat:"Street Food",rating:4.5,orders:58000,delivery:20,tags:["Stuffed Paratha","Lassi","Halwa"],platform:"swiggy",swiggy:"https://www.swiggy.com/",zomato:null,img:"🥙",price:"₹"},
+  {id:22,city:"delhi",name:"Moti Mahal",area:"Daryaganj",lat:28.6426,lng:77.238,cat:"North Indian",rating:4.4,orders:42000,delivery:40,tags:["Butter Chicken","Dal Makhani","Naan"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🍛",price:"₹₹₹"},
+  {id:23,city:"delhi",name:"Natraj Dahi Bhalle",area:"Chandni Chowk",lat:28.6571,lng:77.2302,cat:"Street Food",rating:4.7,orders:46000,delivery:20,tags:["Dahi Bhalle","Papdi Chat","Gol Gappe"],platform:"swiggy",swiggy:"https://www.swiggy.com/",zomato:null,img:"🥗",price:"₹"},
+  {id:24,city:"delhi",name:"Kake Da Hotel",area:"Connaught Place",lat:28.634,lng:77.2195,cat:"North Indian",rating:4.3,orders:37000,delivery:35,tags:["Dal Fry","Roti","Chicken Curry"],platform:"zomato",swiggy:null,zomato:"https://www.zomato.com/",img:"🍽️",price:"₹₹"},
+  {id:25,city:"chennai",name:"Saravana Bhavan",area:"T. Nagar",lat:13.0418,lng:80.2341,cat:"Breakfast",rating:4.5,orders:59000,delivery:30,tags:["Sambar Idli","Vada","Pongal"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🍱",price:"₹"},
+  {id:26,city:"chennai",name:"Murugan Idli Shop",area:"West Mambalam",lat:13.0371,lng:80.2197,cat:"Breakfast",rating:4.6,orders:52000,delivery:25,tags:["Idli","Sambar","Chutneys"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🥘",price:"₹"},
+  {id:27,city:"chennai",name:"Anjappar Chettinad",area:"Anna Nagar",lat:13.0851,lng:80.2101,cat:"North Indian",rating:4.4,orders:44000,delivery:35,tags:["Chettinad Chicken","Kothu Parotta"],platform:"zomato",swiggy:null,zomato:"https://www.zomato.com/",img:"🍗",price:"₹₹"},
+  {id:28,city:"chennai",name:"Ratna Cafe",area:"Triplicane",lat:13.0596,lng:80.2741,cat:"Breakfast",rating:4.5,orders:38000,delivery:30,tags:["Idli","Dosa","Filter Coffee"],platform:"swiggy",swiggy:"https://www.swiggy.com/",zomato:null,img:"☕",price:"₹"},
+  {id:29,city:"kolkata",name:"Nizam's Kathi Roll",area:"New Market",lat:22.56,lng:88.3525,cat:"Street Food",rating:4.6,orders:61000,delivery:20,tags:["Egg Roll","Chicken Roll","Mutton Roll"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🌯",price:"₹"},
+  {id:30,city:"kolkata",name:"Peter Cat",area:"Park Street",lat:22.5521,lng:88.3517,cat:"North Indian",rating:4.5,orders:47000,delivery:40,tags:["Chelo Kebab","Sizzlers","Fish"],platform:"zomato",swiggy:null,zomato:"https://www.zomato.com/",img:"🍖",price:"₹₹₹"},
+  {id:31,city:"kolkata",name:"Mishti Hub",area:"Salt Lake",lat:22.5868,lng:88.4178,cat:"Desserts",rating:4.5,orders:40000,delivery:30,tags:["Rasgulla","Sandesh","Mishti Doi"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🍮",price:"₹"},
+  {id:32,city:"kolkata",name:"Balwant Singh Dhaba",area:"Elgin Road",lat:22.538,lng:88.352,cat:"Breakfast",rating:4.4,orders:35000,delivery:25,tags:["Paratha","Chai","Halwa"],platform:"swiggy",swiggy:"https://www.swiggy.com/",zomato:null,img:"🥞",price:"₹"},
+  {id:33,city:"pune",name:"Kayani Bakery",area:"East Street",lat:18.5204,lng:73.88,cat:"Desserts",rating:4.6,orders:43000,delivery:35,tags:["Shrewsbury Biscuits","Mawa Cake","Nan Khatai"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🍪",price:"₹"},
+  {id:34,city:"pune",name:"Sujata Mastani",area:"Sadashiv Peth",lat:18.5074,lng:73.8494,cat:"Desserts",rating:4.5,orders:38000,delivery:20,tags:["Mastani","Milkshake","Ice Cream"],platform:"swiggy",swiggy:"https://www.swiggy.com/",zomato:null,img:"🧋",price:"₹"},
+  {id:35,city:"pune",name:"Bedekar Misal",area:"Narayan Peth",lat:18.5128,lng:73.8502,cat:"Breakfast",rating:4.6,orders:41000,delivery:25,tags:["Misal Pav","Usal","Thalipeeth"],platform:"zomato",swiggy:null,zomato:"https://www.zomato.com/",img:"🌶️",price:"₹"},
+  {id:36,city:"jaipur",name:"Rawat Mishthan",area:"Station Road",lat:26.9185,lng:75.7875,cat:"Desserts",rating:4.6,orders:46000,delivery:25,tags:["Pyaaz Kachori","Dal Kachori","Ghevar"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🥮",price:"₹"},
+  {id:37,city:"jaipur",name:"LMB Hotel",area:"Johari Bazaar",lat:26.9213,lng:75.8236,cat:"Breakfast",rating:4.4,orders:38000,delivery:30,tags:["Dal Baati Churma","Rajasthani Thali"],platform:"zomato",swiggy:null,zomato:"https://www.zomato.com/",img:"🍽️",price:"₹₹"},
+  {id:38,city:"jaipur",name:"Chokhi Dhani Food",area:"Tonk Road",lat:26.809,lng:75.7851,cat:"North Indian",rating:4.5,orders:35000,delivery:45,tags:["Rajasthani Thali","Ker Sangri","Laal Maas"],platform:"both",swiggy:"https://www.swiggy.com/",zomato:"https://www.zomato.com/",img:"🫕",price:"₹₹₹"},
+];
+
+const BASE_REVIEWS={
+  1:[{user:"Ravi K",rating:5,text:"Best biryani in Hyderabad, no contest! The dum cooking makes all the difference. Must try Haleem too!",time:"2 days ago"},{user:"Priya S",rating:4,text:"Always crowded but totally worth it. The irani chai here is phenomenal.",time:"5 days ago"}],
+  9:[{user:"Sanjay T",rating:5,text:"Bade Miyan at midnight is a Mumbai tradition! Seekh kebab rolls are absolutely fire.",time:"3 days ago"},{user:"Anita B",rating:4,text:"Late night food heaven. Nothing beats this after a long night out in Colaba.",time:"4 days ago"}],
+  15:[{user:"Deepak L",rating:5,text:"MTR is an institution. The masala dosa here is unmatched anywhere in India. Period.",time:"2 days ago"},{user:"Kavya N",rating:5,text:"Authentic South Indian breakfast. The filter coffee alone is worth the entire trip!",time:"6 days ago"}],
+  20:[{user:"Mohd Irfan",rating:5,text:"Karim's is the OG. Mutton biryani and nihari — this is what Delhi is about.",time:"1 day ago"},{user:"Pooja V",rating:4,text:"Historic place, historic food. A must-visit whenever in Old Delhi!",time:"3 days ago"}],
+};
+RESTAURANTS.forEach(r=>{
+  if(!BASE_REVIEWS[r.id]) BASE_REVIEWS[r.id]=[
+    {user:"Foodie User",rating:Math.round(r.rating),text:`Amazing ${r.cat.toLowerCase()} spot in ${r.area}! The ${r.tags[0]} is absolutely delicious. Highly recommended!`,time:"1 week ago"},
+    {user:"Local Guide",rating:Math.max(3,Math.round(r.rating)-1+(Math.random()>.5?1:0)),text:`One of the top places in ${r.area}. Delivery in ${r.delivery} mins is consistently fast. The portions are generous too.`,time:"2 weeks ago"},
+  ];
+});
+</script>
+
+<script>
+// ─── State ───
+const S={city:"hyderabad",cat:"All",plat:"all",sort:"orders",search:"",view:"grid"};
+let leafMap=null,leafMarkers=[],userRevs={};
+let selStars=0;
+
+// ─── City colors gradient map ───
+const CITY_GRADIENTS={
+  hyderabad:"linear-gradient(135deg,#FF6B35,#F7C948)",
+  mumbai:"linear-gradient(135deg,#F7C948,#FF6B35)",
+  bangalore:"linear-gradient(135deg,#4ECDC4,#44CF6C)",
+  delhi:"linear-gradient(135deg,#A78BFA,#818CF8)",
+  chennai:"linear-gradient(135deg,#F472B6,#FB7185)",
+  kolkata:"linear-gradient(135deg,#34D399,#10B981)",
+  pune:"linear-gradient(135deg,#FB923C,#F97316)",
+  jaipur:"linear-gradient(135deg,#E879F9,#C026D3)",
+};
+const CAT_COLORS={
+  Biryani:"#FF6B35",Breakfast:"#F7C948","Street Food":"#4ECDC4",
+  Desserts:"#F472B6",Cafe:"#A78BFA","North Indian":"#34D399",
+};
+
+function fmt(n){return n>=1000?(n/1000).toFixed(0)+"K+":n}
+function starsHtml(r,n=5){let s="";for(let i=1;i<=5;i++)s+=`<span style="color:${i<=Math.round(r)?"#F7C948":"rgba(255,255,255,.2)"}">★</span>`;return s}
+
+// ─── Floating emojis ───
+function spawnEmojis(){
+  const wrap=document.getElementById("floatingEmojis");
+  const emojis=["🍛","🌮","🍱","🥘","🍲","🍗","☕","🍰","🌯","🥙","🍮","🧋","🥞","🫕","🍡"];
+  wrap.innerHTML="";
+  for(let i=0;i<12;i++){
+    const d=document.createElement("div");
+    d.className="fe";
+    d.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+    d.style.left=Math.random()*100+"%";
+    d.style.top=Math.random()*100+"%";
+    d.style.animationDelay=Math.random()*6+"s";
+    d.style.animationDuration=(6+Math.random()*4)+"s";
+    wrap.appendChild(d);
+  }
+}
+
+// ─── Filter + sort ───
+function getFiltered(){
+  let list=RESTAURANTS.filter(r=>r.city===S.city);
+  if(S.cat!=="All")list=list.filter(r=>r.cat===S.cat);
+  if(S.plat==="swiggy")list=list.filter(r=>r.platform==="swiggy"||r.platform==="both");
+  if(S.plat==="zomato")list=list.filter(r=>r.platform==="zomato"||r.platform==="both");
+  if(S.search){const q=S.search.toLowerCase();list=list.filter(r=>r.name.toLowerCase().includes(q)||r.area.toLowerCase().includes(q)||r.cat.toLowerCase().includes(q)||r.tags.some(t=>t.toLowerCase().includes(q)));}
+  if(S.sort==="orders")list.sort((a,b)=>b.orders-a.orders);
+  else if(S.sort==="rating")list.sort((a,b)=>b.rating-a.rating);
+  else if(S.sort==="delivery")list.sort((a,b)=>a.delivery-b.delivery);
+  else list.sort((a,b)=>a.name.localeCompare(b.name));
+  return list;
+}
+
+// ─── Stats ───
+function renderStats(){
+  const list=RESTAURANTS.filter(r=>r.city===S.city);
+  const city=CITIES.find(c=>c.id===S.city);
+  const total=list.reduce((s,r)=>s+r.orders,0);
+  const avg=(list.reduce((s,r)=>s+r.rating,0)/list.length).toFixed(1);
+  const fast=Math.min(...list.map(r=>r.delivery));
+  document.getElementById("statsRow").innerHTML=`
+    <div class="stat-pill"><span class="num" style="color:${city.color}">${list.length}</span><span class="lbl">Spots</span></div>
+    <div class="stat-pill"><span class="num" style="color:#F7C948">${fmt(total)}</span><span class="lbl">Monthly Orders</span></div>
+    <div class="stat-pill"><span class="num" style="color:#34D399">${avg}⭐</span><span class="lbl">Avg Rating</span></div>
+    <div class="stat-pill"><span class="num" style="color:#4ECDC4">${fast}m</span><span class="lbl">Fastest Delivery</span></div>
+    <div class="stat-pill"><span class="num" style="color:#A78BFA">${city.emoji}</span><span class="lbl">${city.state}</span></div>
+  `;
+}
+
+// ─── City tabs ───
+function renderCities(){
+  const el=document.getElementById("cityScroller");
+  el.innerHTML=CITIES.map(c=>`
+    <button class="city-btn ${c.id===S.city?"active":""}" data-city="${c.id}"
+      style="${c.id===S.city?`background:${c.color};color:#1a0a2e;`:""}">
+      ${c.emoji} ${c.name}
+    </button>
+  `).join("");
+  el.querySelectorAll(".city-btn").forEach(b=>b.addEventListener("click",()=>{S.city=b.dataset.city;S.cat="All";renderAll();}));
+}
+
+// ─── Cat chips ───
+function renderCatChips(){
+  const cats=["All",...new Set(RESTAURANTS.filter(r=>r.city===S.city).map(r=>r.cat)).values()].sort((a,b)=>a==="All"?-1:b==="All"?1:a.localeCompare(b));
+  const el=document.getElementById("catChips");
+  el.innerHTML=cats.map(c=>{
+    const col=CAT_COLORS[c]||"#fff";
+    const active=c===S.cat;
+    return `<button class="cat-chip ${active?"active":""}" data-cat="${c}"
+      style="${active?`background:${col};border-color:${col};color:#1a0a2e;`:`border-color:${col}33;color:${col};`}">${c}</button>`;
+  }).join("");
+  el.querySelectorAll(".cat-chip").forEach(b=>b.addEventListener("click",()=>{S.cat=b.dataset.cat;renderAll();}));
+}
+
+// ─── Cards grid ───
+function renderGrid(){
+  const list=getFiltered();
+  const el=document.getElementById("cardsGrid");
+  if(!list.length){el.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="big">🍽️</div><p>No restaurants found</p></div>`;return;}
+  el.innerHTML=list.map((r,i)=>{
+    const grad=CITY_GRADIENTS[r.city]||"linear-gradient(135deg,#FF6B35,#F7C948)";
+    const catCol=CAT_COLORS[r.cat]||"#fff";
+    const rankClass=i===0?"rank-1":i===1?"rank-2":i===2?"rank-3":"rank-other";
+    const platTag=r.platform==="both"?'<span class="plat-tag ptag-both">Swiggy & Zomato</span>':r.platform==="swiggy"?'<span class="plat-tag ptag-sw">🟠 Swiggy</span>':'<span class="plat-tag ptag-zo">🔴 Zomato</span>';
+    return `
+    <div class="food-card" style="animation-delay:${i*.07}s" data-id="${r.id}">
+      <div class="card-accent-bar" style="background:${grad}"></div>
+      <div class="card-inner">
+        <div class="card-top-row">
+          <span class="rank-badge ${rankClass}">#${i+1} ${i===0?"🥇":i===1?"🥈":i===2?"🥉":""}</span>
+          ${platTag}
+        </div>
+        <div class="card-emoji-wrap">${r.img}</div>
+        <div class="card-name">${r.name}</div>
+        <div class="card-area">
+          <span style="opacity:.5">📍</span>${r.area}
+          <span style="opacity:.3;margin:0 4px">·</span>
+          <span style="color:${r.price==="₹"?"#34D399":r.price==="₹₹₹"?"#F472B6":"#F7C948"}">${r.price}</span>
+        </div>
+        <div class="card-metrics-row">
+          <div class="metric-box"><div class="metric-val" style="color:${catCol}">${fmt(r.orders)}</div><div class="metric-lbl">Orders</div></div>
+          <div class="metric-box"><div class="metric-val" style="color:#F7C948">${r.rating}⭐</div><div class="metric-lbl">Rating</div></div>
+          <div class="metric-box"><div class="metric-val" style="color:#4ECDC4">${r.delivery}m</div><div class="metric-lbl">Delivery</div></div>
+        </div>
+        <div class="card-tags-row">${r.tags.map(t=>`<span class="ctag">${t}</span>`).join("")}</div>
+        <div class="card-btns">
+          ${r.swiggy?`<a class="cbtn cbtn-sw" href="${r.swiggy}" target="_blank">🟠 Swiggy</a>`:""}
+          ${r.zomato?`<a class="cbtn cbtn-zo" href="${r.zomato}" target="_blank">🔴 Zomato</a>`:""}
+          <button class="cbtn cbtn-review" onclick="openModal(${r.id})">💬 Reviews</button>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+// ─── List view ───
+function renderList(){
+  const list=getFiltered();
+  const el=document.getElementById("listBody");
+  if(!list.length){el.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:40px;color:rgba(255,255,255,.3)">No results</td></tr>`;return;}
+  el.innerHTML=list.map((r,i)=>`
+    <tr>
+      <td style="color:rgba(255,255,255,.3);font-weight:800">${i+1}</td>
+      <td><div style="font-weight:700;font-size:.9rem">${r.img} ${r.name}</div></td>
+      <td style="color:rgba(255,255,255,.4);font-size:.8rem">📍 ${r.area}</td>
+      <td><span style="background:${CAT_COLORS[r.cat]||"#fff"}22;color:${CAT_COLORS[r.cat]||"#fff"};border-radius:50px;padding:3px 10px;font-size:.72rem;font-weight:700">${r.cat}</span></td>
+      <td style="font-weight:800;color:#F7C948">${fmt(r.orders)}</td>
+      <td style="color:#F7C948">${"★".repeat(Math.round(r.rating))} <span style="color:rgba(255,255,255,.4);font-size:.8rem">${r.rating}</span></td>
+      <td style="color:#4ECDC4;font-weight:700">${r.delivery}m</td>
+      <td style="display:flex;gap:5px;flex-wrap:wrap;padding:10px 16px">
+        ${r.swiggy?`<a style="background:rgba(255,105,0,.15);color:#FF8C42;border:1px solid rgba(255,105,0,.3);border-radius:8px;padding:4px 10px;text-decoration:none;font-size:.75rem;font-weight:700" href="${r.swiggy}" target="_blank">Swiggy</a>`:""}
+        ${r.zomato?`<a style="background:rgba(226,55,68,.15);color:#F87171;border:1px solid rgba(226,55,68,.3);border-radius:8px;padding:4px 10px;text-decoration:none;font-size:.75rem;font-weight:700" href="${r.zomato}" target="_blank">Zomato</a>`:""}
+        <button style="background:rgba(167,139,250,.15);color:#A78BFA;border:1px solid rgba(167,139,250,.3);border-radius:8px;padding:4px 10px;font-size:.75rem;font-weight:700;cursor:pointer" onclick="openModal(${r.id})">💬</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+// ─── Map view ───
+function renderMap(){
+  const city=CITIES.find(c=>c.id===S.city);
+  const list=getFiltered();
+  if(!leafMap){
+    leafMap=L.map("leafletMap").setView([city.lat,city.lng],12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:"© OpenStreetMap"}).addTo(leafMap);
+  } else {
+    leafMap.setView([city.lat,city.lng],12);
+  }
+  leafMarkers.forEach(m=>m.remove());leafMarkers=[];
+  list.forEach((r,i)=>{
+    const color=r.platform==="swiggy"?"#FF6900":r.platform==="zomato"?"#E23744":(CITY_GRADIENTS[r.city]||"#A78BFA").match(/#\w+/)?.[0]||"#A78BFA";
+    const el=document.createElement("div");
+    el.style.cssText=`width:38px;height:38px;border-radius:50%;background:${color};border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 3px 12px rgba(0,0,0,.4);cursor:pointer;transition:transform .15s`;
+    el.textContent=r.img;
+    el.onmouseenter=()=>el.style.transform="scale(1.2)";
+    el.onmouseleave=()=>el.style.transform="scale(1)";
+    const icon=L.divIcon({html:el,className:"",iconSize:[38,38],iconAnchor:[19,19]});
+    const marker=L.marker([r.lat,r.lng],{icon}).addTo(leafMap);
+    marker.on("click",()=>showMapCard(r,i));
+    leafMarkers.push(marker);
+  });
+  if(list.length)showMapCard(list[0],0);
+}
+
+function showMapCard(r,i){
+  const grad=CITY_GRADIENTS[r.city]||"linear-gradient(135deg,#FF6B35,#F7C948)";
+  document.getElementById("mapOverlayCard").innerHTML=`
+    <div style="font-size:48px;text-align:center;margin-bottom:8px">${r.img}</div>
+    <div style="font-weight:800;font-size:1.05rem;margin-bottom:3px">${r.name}</div>
+    <div style="font-size:.75rem;color:rgba(255,255,255,.4);margin-bottom:12px">📍 ${r.area} · #${i+1}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="background:rgba(0,0,0,.25);border-radius:10px;padding:8px;text-align:center">
+        <div style="font-weight:800;color:#F7C948">${fmt(r.orders)}</div>
+        <div style="font-size:.65rem;color:rgba(255,255,255,.35);text-transform:uppercase">Orders</div>
+      </div>
+      <div style="background:rgba(0,0,0,.25);border-radius:10px;padding:8px;text-align:center">
+        <div style="font-weight:800;color:#4ECDC4">${r.rating}⭐</div>
+        <div style="font-size:.65rem;color:rgba(255,255,255,.35);text-transform:uppercase">Rating</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      ${r.swiggy?`<a href="${r.swiggy}" target="_blank" style="flex:1;background:#FF6900;color:#fff;border-radius:8px;padding:8px;text-align:center;text-decoration:none;font-size:.78rem;font-weight:700">Swiggy</a>`:""}
+      ${r.zomato?`<a href="${r.zomato}" target="_blank" style="flex:1;background:#E23744;color:#fff;border-radius:8px;padding:8px;text-align:center;text-decoration:none;font-size:.78rem;font-weight:700">Zomato</a>`:""}
+    </div>
+    <button onclick="openModal(${r.id})" style="width:100%;background:rgba(167,139,250,.2);color:#A78BFA;border:1px solid rgba(167,139,250,.3);border-radius:8px;padding:8px;font-size:.78rem;font-weight:700;cursor:pointer">💬 Reviews</button>
+  `;
+}
+
+// ─── Modal ───
+function openModal(id){
+  const r=RESTAURANTS.find(x=>x.id===id);
+  if(!r)return;
+  selStars=0;
+  const all=[...(BASE_REVIEWS[id]||[]),...(userRevs[id]||[])];
+  const avgR=(all.reduce((s,x)=>s+x.rating,0)/all.length).toFixed(1);
+  const grad=CITY_GRADIENTS[r.city]||"linear-gradient(135deg,#FF6B35,#F7C948)";
+  document.getElementById("modalContent").innerHTML=`
+    <div class="modal-header-grad" style="background:${grad}"></div>
+    <div class="modal-body-inner">
+      <div class="modal-emoji-big">${r.img}</div>
+      <div class="modal-title">${r.name}</div>
+      <div class="modal-sub">📍 ${r.area} · ${r.cat} · ${r.city.charAt(0).toUpperCase()+r.city.slice(1)}</div>
+      <div class="modal-metrics-grid">
+        <div class="mm-box"><div class="mm-val" style="color:#FF6B35">${fmt(r.orders)}</div><div class="mm-lbl">Orders</div></div>
+        <div class="mm-box"><div class="mm-val" style="color:#F7C948">${avgR}⭐</div><div class="mm-lbl">Rating</div></div>
+        <div class="mm-box"><div class="mm-val" style="color:#4ECDC4">${r.delivery}m</div><div class="mm-lbl">Delivery</div></div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px">
+        ${r.tags.map(t=>`<span style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);border-radius:6px;padding:4px 10px;font-size:.75rem;font-weight:600">${t}</span>`).join("")}
+        <span style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.5);border-radius:6px;padding:4px 10px;font-size:.75rem;font-weight:600">${r.price}</span>
+      </div>
+      <div class="modal-order-btns">
+        ${r.swiggy?`<a class="mobtn mobtn-sw" href="${r.swiggy}" target="_blank">🟠 Order on Swiggy</a>`:""}
+        ${r.zomato?`<a class="mobtn mobtn-zo" href="${r.zomato}" target="_blank">🔴 Order on Zomato</a>`:""}
+      </div>
+      <div class="reviews-title">💬 Reviews <span style="background:rgba(255,255,255,.08);border-radius:50px;padding:2px 10px;font-size:.75rem;color:rgba(255,255,255,.4)">${all.length}</span></div>
+      ${all.map(rv=>`
+        <div class="review-card">
+          <div class="rv-header"><span class="rv-user">${rv.user}</span><span class="rv-time">${rv.time}</span></div>
+          <div class="rv-stars">${"★".repeat(rv.rating)}${"☆".repeat(5-rv.rating)}</div>
+          <div class="rv-text">${rv.text}</div>
+        </div>
+      `).join("")}
+      <div class="write-review-box">
+        <div class="wr-title">✍️ Write your review</div>
+        <div class="star-row" id="starRow">
+          ${[1,2,3,4,5].map(v=>`<button class="star-interactive" data-v="${v}">★</button>`).join("")}
+        </div>
+        <textarea class="review-ta" id="reviewTa" placeholder="Share your experience…"></textarea>
+        <button class="post-btn" onclick="submitReview(${id})">Post Review 🚀</button>
+        <div class="success-msg" id="successMsg">✅ Your review has been posted! Thank you.</div>
+      </div>
+    </div>
+  `;
+  document.querySelectorAll("#starRow .star-interactive").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      selStars=+btn.dataset.v;
+      document.querySelectorAll("#starRow .star-interactive").forEach((b,idx)=>b.classList.toggle("lit",idx<selStars));
+    });
+  });
+  document.getElementById("modalOverlay").classList.add("open");
+}
+
+function submitReview(id){
+  const text=document.getElementById("reviewTa").value.trim();
+  if(!text||selStars===0){alert("Please select a star rating and write your review!");return;}
+  if(!userRevs[id])userRevs[id]=[];
+  userRevs[id].unshift({user:"You 🙋",rating:selStars,text,time:"Just now"});
+  const msg=document.getElementById("successMsg");
+  msg.style.display="block";
+  setTimeout(()=>openModal(id),1300);
+}
+
+function closeModal(){document.getElementById("modalOverlay").classList.remove("open");}
+
+// ─── View switching ───
+function setView(v){
+  S.view=v;
+  document.querySelectorAll(".view-btn").forEach(b=>b.classList.toggle("active",b.dataset.view===v));
+  ["grid","map","list"].forEach(name=>{
+    const el=document.getElementById("view"+name.charAt(0).toUpperCase()+name.slice(1));
+    el.classList.toggle("d-none",name!==v);
+  });
+  if(v==="grid")renderGrid();
+  else if(v==="list")renderList();
+  else if(v==="map"){renderMap();setTimeout(()=>leafMap&&leafMap.invalidateSize(),200);}
+}
+
+// ─── Result count ───
+function updateCount(){
+  document.getElementById("resultCount").textContent=getFiltered().length+" spots";
+}
+
+// ─── Render all ───
+function renderAll(){
+  renderCities();
+  renderStats();
+  renderCatChips();
+  updateCount();
+  setView(S.view);
+  if(leafMap){leafMarkers.forEach(m=>m.remove());leafMarkers=[];}
+}
+
+// ─── Scroll to top ───
+function scrollToTop(){window.scrollTo({top:0,behavior:"smooth"});}
+
+// ─── Init ───
+document.addEventListener("DOMContentLoaded",()=>{
+  spawnEmojis();
+
+  document.querySelectorAll(".view-btn").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
+  document.getElementById("sortSel").addEventListener("change",e=>{S.sort=e.target.value;renderAll();});
+
+  document.querySelectorAll(".plat-chip").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll(".plat-chip").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    S.plat=b.dataset.plat;
+    renderAll();
+  }));
+
+  const si=document.getElementById("searchInput");
+  const sc=document.getElementById("searchClear");
+  si.addEventListener("input",()=>{S.search=si.value;sc.style.display=S.search?"flex":"none";renderAll();});
+  sc.addEventListener("click",()=>{si.value="";S.search="";sc.style.display="none";renderAll();});
+
+  document.getElementById("modalClose").addEventListener("click",closeModal);
+  document.getElementById("modalOverlay").addEventListener("click",e=>{if(e.target===document.getElementById("modalOverlay"))closeModal();});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();});
+
+  document.getElementById("themeToggle").addEventListener("click",()=>{
+    document.body.style.fontFamily=""; // noop, just visual
+    alert("Dark mode is the default! This app is designed for a vibrant dark theme. 🌙");
+  });
+
+  renderAll();
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
